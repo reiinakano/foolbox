@@ -109,6 +109,11 @@ class IterativeProjectedGradientBaseAttack(Attack):
 
         original = a.unperturbed.copy()
 
+        intermediate_adversarials_temp = list()
+        intermediate_adversarials_desc_temp = list()
+        intermediate_adversarials_temp.append(original.copy())
+        intermediate_adversarials_desc_temp.append('original')
+
         if random_start:
             # using uniform noise even if the perturbation clipping uses
             # a different norm because cleverhans does it the same way
@@ -117,12 +122,15 @@ class IterativeProjectedGradientBaseAttack(Attack):
                     original.dtype)
             x = original + self._clip_perturbation(a, noise, epsilon)
             strict = False  # because we don't enforce the bounds here
+
+            intermediate_adversarials_temp.append(x.copy())
+            intermediate_adversarials_desc_temp.append('random start')
         else:
             x = original
             strict = True
 
         success = False
-        for _ in range(iterations):
+        for i in range(iterations):
             gradient = self._gradient(a, x, class_, strict=strict)
             # non-strict only for the first call and
             # only if random_start is True
@@ -138,6 +146,9 @@ class IterativeProjectedGradientBaseAttack(Attack):
 
             x = np.clip(x, min_, max_)
 
+            intermediate_adversarials_temp.append(x)
+            intermediate_adversarials_desc_temp.append('iter' + str(i))
+
             logits, is_adversarial = a.forward_one(x)
             if logging.getLogger().isEnabledFor(logging.DEBUG):
                 if targeted:
@@ -147,6 +158,8 @@ class IterativeProjectedGradientBaseAttack(Attack):
                 ce = crossentropy(class_, logits)
                 logging.debug('crossentropy to {} is {}'.format(class_, ce))
             if is_adversarial:
+                self.intermediate_adversarials = intermediate_adversarials_temp
+                self.intermediate_adversarials_desc = intermediate_adversarials_desc_temp
                 if return_early:
                     return True
                 else:

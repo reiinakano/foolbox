@@ -158,7 +158,6 @@ class IterativeProjectedGradientBaseAttack(Attack):
                 ce = crossentropy(class_, logits)
                 logging.debug('crossentropy to {} is {}'.format(class_, ce))
             if is_adversarial:
-                logging.info(intermediate_adversarials_temp)
                 self.intermediate_adversarials = intermediate_adversarials_temp
                 self.intermediate_adversarials_desc = intermediate_adversarials_desc_temp
                 if return_early:
